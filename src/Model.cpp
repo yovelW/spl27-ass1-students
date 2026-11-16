@@ -1,5 +1,6 @@
 #include <cstdint>
 #include "Model.h"
+#include "GPU.h"
 
 std::uint64_t Model::mixByte(std::uint64_t state, unsigned char byte) const {
     state ^= byte;
