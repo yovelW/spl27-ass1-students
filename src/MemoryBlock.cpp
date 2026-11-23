@@ -30,6 +30,11 @@ IdleAction MemoryBlock::release()
         return onLastRelease();
 }
 
+bool MemoryBlock::isIdle() const
+{
+    return refCount == 0;
+}
+
 IdleAction KVBlock::onLastRelease() const
 {
     return IdleAction::KeepCached;

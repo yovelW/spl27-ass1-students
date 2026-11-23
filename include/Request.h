@@ -31,6 +31,8 @@ public:
     int getId() const;
     const Model& getModel() const;
     int getAdmissionCycle() const;
+    void reserve(size_t n);
+    void unreserve(size_t n);
 };
 
 class GenerativeRequest: public Request{

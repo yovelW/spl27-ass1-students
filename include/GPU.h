@@ -4,6 +4,7 @@
 #include <string>
 #include <cstddef>
 #include <vector>
+#include <unordered_map>
 
 struct PrefixMatch {
     std::size_t matchedTokens;
@@ -30,10 +31,15 @@ public:
     void writeToBlock(std::size_t blockId, std::size_t offset, int value);
     PrefixMatch findLongestCachedPrefix(const std::string& modelId, std::size_t embeddingSize,
                                         const std::vector<std::string>& promptTokens) const;
+    std::size_t getNextBlock(); 
 private:
     std::size_t blocksNum;
     std::size_t blockSize;
     std::vector<MemoryBlock*> memory;
+    std::vector<std::string> models;
+    std::vector<std::vector<std::string>> prefixes;
+    std::unordered_map<int, std::size_t> requests;
+    std::size_t resNum;
 };
 
 #endif
