@@ -1,63 +1,126 @@
 #include <cstdint>
 #include "Request.h"
+#include "GPU.h"
+#include "Model.h"
 
 Request::Request(int id, const Model &model, int admissionCycle, std::string prompt)
     : id(id), model(model), admissionCycle(admissionCycle), reservedBlocks(0)
 {
 }
 
-int Request::getId() const 
+int Request::getId() const
 {
     return id;
 }
 
-const Model &Request::getModel() const 
+const Model &Request::getModel() const
 {
     return model;
 }
 
-int Request::getAdmissionCycle() const 
+int Request::getAdmissionCycle() const
 {
     return admissionCycle;
 }
 
-void Request::Request::deallocateMemory(GPU &gpu) 
+void Request::deallocateMemory(GPU &gpu)
 {
-    
+    std::size_t unused = getNeedToUnreserve();
+    if (unused > 0)
+    {
+        gpu.unreserve(unused, *this);
+        reservedBlocks = 0;
+    }
+    for (std::size_t slot : memoryBlocks)
+    {
+        gpu.release(slot);
+    }
+    memoryBlocks.clear();
 }
-
-std::size_t Request::getNeededMemory(const GPU &gpu) const 
-{
-
-}
-
-std::size_t Request::getMaxNeededMemory() const {}
-
-std::vector<std::string> Request::getCacheableTokens() const {}
-
-void Request::allocateOneBlock(GPU &gpu, std::size_t slot) const {}
 
 Request *Request::clone(const Model &model) const {}
 
-void Request::act(GPU &gpu) {}
 
 bool Request::finished() const {}
 
-void Request::reserveMemory(GPU &gpu) 
+void Request::reserveMemory(GPU &gpu)
 {
-    
 }
 
 std::string Request::getOutput() const {}
 
-std::size_t Request::getNeedToUnreserve() const {}
+std::size_t Request::getNeedToUnreserve() const
+{
+    return reservedBlocks;
+}
 
 GenerativeRequest::GenerativeRequest(int id, const Model &model, int admissionCycle, std::string prompt, std::string scriptedOutput, std::size_t maxOutputTokens)
     : Request(id, model, admissionCycle, prompt), scriptedOutput(scriptedOutput), maxOutputTokens(maxOutputTokens)
 {
 }
 
-EmbeddingRequest::EmbeddingRequest(int id, const Model& model, int admissionCycle, std::string prompt)
+std::size_t GenerativeRequest::getNeededMemory(const GPU &gpu) const
+{
+
+    PrefixMatch prefix = gpu.findLongestCachedPrefix(model.getId(), model.getEmbedSize(), tokens);
+    return model.getEmbedSize() * (tokens.size() - prefix.matchedTokens + maxOutputTokens);
+}
+
+std::size_t GenerativeRequest::getMaxNeededMemory() const
+{
+    return model.getEmbedSize() * (maxOutputTokens + tokens.size());
+}
+
+void GenerativeRequest::act(GPU &gpu)
+{
+    if (finished())
+        return;
+
+    std::size_t embedSize = model.getEmbedSize();
+    std::size_t tpb = gpu.getBlockSize() / embedSize;
+}
+
+void GenerativeRequest::allocateOneBlock(GPU &gpu, std::size_t slot) const
+{
+    gpu.addMemoryBlock(*this, slot);
+}
+
+std::vector<std::string> GenerativeRequest::getCacheableTokens() const
+{
+    return tokens;
+}
+
+std::string GenerativeRequest::getOutput() const
+{
+}
+
+EmbeddingRequest::EmbeddingRequest(int id, const Model &model, int admissionCycle, std::string prompt)
     : Request(id, model, admissionCycle, prompt)
+{
+}
+
+std::size_t EmbeddingRequest::getNeededMemory(const GPU &gpu) const
+{
+    return 2 * model.getEmbedSize();
+}
+
+std::size_t EmbeddingRequest::getMaxNeededMemory() const
+{
+    return 2 * model.getEmbedSize();
+}
+
+void EmbeddingRequest::act(GPU &gpu) {}
+
+void EmbeddingRequest::allocateOneBlock(GPU &gpu, std::size_t slot) const
+{
+    gpu.addMemoryBlock(*this, slot);
+}
+
+std::vector<std::string> EmbeddingRequest::getCacheableTokens() const
+{
+    return {};
+}
+
+std::string EmbeddingRequest::getOutput() const
 {
 }

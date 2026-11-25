@@ -163,3 +163,8 @@ std::size_t GPU::getNextBlock()
             return slot;
         }
 }
+
+std::size_t GPU::getBlockSize() const
+{
+    return blockSize;
+}
