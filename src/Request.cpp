@@ -40,14 +40,7 @@ void Request::deallocateMemory(GPU &gpu)
 
 Request *Request::clone(const Model &model) const {}
 
-
 bool Request::finished() const {}
-
-void Request::reserveMemory(GPU &gpu)
-{
-}
-
-std::string Request::getOutput() const {}
 
 std::size_t Request::getNeedToUnreserve() const
 {
